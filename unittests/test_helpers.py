@@ -40,6 +40,13 @@ except ImportError:
     HAS_TBLIB = False
 
 
+DEBUG_TEST = os.getenv("PYQT") == "PyQt5" and sys.version_info[:2] == (3, 7) and os.getenv("MATPLOTLIB_VERSION") == "3.5"
+
+def debug_print(msg):
+    if DEBUG_TEST:
+        sys.stderr.write(msg + "\n")
+
+
 def setup_warnings():
     warnings.filterwarnings('ignore',
                             message="Matplotlib is building the font cache")
@@ -48,6 +55,7 @@ def setup_warnings():
 
 def prefork(method):
     def new_method(*args, **kwargs):
+        debug_print(f"inside prefork() of {method.__name__}")
         pipe_r, pipe_w = os.pipe()
         pid = os.fork()
         if pid:

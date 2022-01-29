@@ -22,6 +22,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
+import sys
 import shutil
 import tempfile
 import unittest
@@ -31,6 +32,14 @@ from multiprocessing import Pool
 from unittest.util import strclass
 
 from .test_helpers import prefork, get_test_data_files
+
+
+DEBUG_TEST = os.getenv("PYQT") == "PyQt5" and sys.version_info[:2] == (3, 7) and os.getenv("MATPLOTLIB_VERSION") == "3.5"
+
+def debug_print(msg):
+    if DEBUG_TEST:
+        sys.stderr.write(msg + "\n")
+
 
 try:
     from unittest import mock
@@ -291,6 +300,7 @@ class TestGUIPlotting(unittest.TestCase):
     def setUp(self):
         self.output_dir = tempfile.mkdtemp()
         self.settings = settings.copy()
+        debug_print("TestGUIPlotting::setUp")
 
     def tearDown(self):
         shutil.rmtree(self.output_dir)
@@ -301,6 +311,7 @@ class TestGUIPlotting(unittest.TestCase):
 
     @prefork
     def runTest(self):
+        debug_print("TestGUIPlotting::runTest")
         pool = Pool(initializer=initfunc)
         results = resultset.load(self.filename)
         self.settings.update(results.meta())

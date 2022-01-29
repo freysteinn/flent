@@ -23,10 +23,16 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import unittest
 import os
+import sys
 
 from flent.settings import parser, Settings, DEFAULT_SETTINGS
 settings = parser.parse_args(args=[], namespace=Settings(DEFAULT_SETTINGS))
 
+DEBUG_TEST = os.getenv("PYQT") == "PyQt5" and sys.version_info[:2] == (3, 7) and os.getenv("MATPLOTLIB_VERSION") == "3.5"
+
+def debug_print(msg):
+    if DEBUG_TEST:
+        sys.stderr.write(msg + "\n")
 
 class TestGui(unittest.TestCase):
 
@@ -39,8 +45,11 @@ class TestGui(unittest.TestCase):
             self.skipTest("No usable Qt module found")
 
     def test_start_gui(self):
+        debug_print("start_gui")
         from flent import gui
+        debug_print("imported gui")
         gui.run_gui(self.settings, test_mode=True)
+        debug_print("exited from gui")
 
 
 test_suite = unittest.TestSuite(
