@@ -25,6 +25,8 @@ import unittest
 import os
 import sys
 
+from .test_helpers import prefork
+
 from flent.settings import parser, Settings, DEFAULT_SETTINGS
 settings = parser.parse_args(args=[], namespace=Settings(DEFAULT_SETTINGS))
 
@@ -36,19 +38,17 @@ def debug_print(msg):
 
 class TestGui(unittest.TestCase):
 
-    def setUp(self):
-        self.settings = settings.copy()
-
+    @prefork
+    def test_start_gui(self):
         try:
             from qtpy import QtCore
         except ImportError:
             self.skipTest("No usable Qt module found")
 
-    def test_start_gui(self):
         debug_print("start_gui")
         from flent import gui
         debug_print("imported gui")
-        gui.run_gui(self.settings, test_mode=True)
+        gui.run_gui(settings, test_mode=True)
         debug_print("exited from gui")
 
 
