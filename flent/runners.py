@@ -1032,6 +1032,8 @@ class NetperfDemoRunner(ProcessRunner):
                         self.settings.SEND_SIZE[0]
                         if self.settings.SEND_SIZE else "")
         args.setdefault('test_payload', self.settings.TEST_PAYLOAD)
+        args.setdefault('burst_count', "")
+        args.setdefault('burst_interval', "")
 
         if self.settings.SWAP_UPDOWN:
             if self.test == 'TCP_STREAM':
@@ -1065,6 +1067,17 @@ class NetperfDemoRunner(ProcessRunner):
                 raise RunnerCheckError(
                     "%s does not support accurate intermediate time reporting. "
                     "You need netperf v2.6.0 or newer." % nperf)
+
+            # Rate limiting requires the Netperf binary to have compiled with the –enable-intervals
+            # flag. Unfortunately, Netperf does not display the help message for the -b and -w
+            # flags. Therefore, we must check for it at runtime like we did --demo-mode.
+            if args['burst_count'] or args['burst_interval']:
+                out, _ = self.run_simple([nperf, '-l', '1', '-D', '-0.2',
+                                          '-b', '1', '-w', '200'], kill=0.1)
+                if "Packet burst size is not compiled in." in out:
+                    raise RunnerCheckError("%s does not support packet burst." % nperf)
+                if "Packet rate control is not compiled in." in out:
+                    raise RunnerCheckError("%s does not support rate control." % nperf)
 
             netperf = {'executable': nperf, '-e': False}
 
@@ -1155,16 +1168,30 @@ class NetperfDemoRunner(ProcessRunner):
                 args['local_bind'] = ""
             else:
                 args['host'] = f"-H {args['host']}"
+        elif self.test == 'UDP_STREAM':
+            args['format'] = "-f m"
+            if args['send_size']:
+                args['send_size'] = "-m {0} -M {0}".format(args['send_size'])
+            args['allow_routing'] = "-R 1"
+
+            # The -b flag defines the burst size in packets, and the -w flag defines the interval
+            # between bursts in milliseconds.
+            if args['burst_count']:
+                args['burst_count'] = "-b {0}".format(args['burst_count'])
+            if args['burst_interval']:
+                args['burst_interval'] = "-w {0}".format(args['burst_interval'])
+
+            args['host'] = f"-H {args['host']}"
         else:
             raise RunnerCheckError(f"Unknown netperf test type: {self.test}")
 
-
         self.command = "{binary} -P 0 -v 0 -D -{interval:.2f} -{ip_version} " \
                        "{marking} -H {control_host} -p {control_port} " \
-                       "-t {test} -l {length:d} {buffer} {format} " \
-                       "{control_local_bind} {extra_args} -- " \
-                       "{socket_timeout} {send_size} {local_bind} {host} -k {output_vars} " \
-                       "{cong_control} {extra_test_args}".format(**args)
+                       "-t {test} -l {length:d} {burst_count} {burst_interval} " \
+                       "{buffer} {format} {control_local_bind} {extra_args} -- " \
+                       "{socket_timeout} {send_size} {local_bind} {host} " \
+                       "{allow_routing} -k {output_vars} {cong_control}" \
+                       "{extra_test_args}".format(**args)
 
         super(NetperfDemoRunner, self).check()
 
