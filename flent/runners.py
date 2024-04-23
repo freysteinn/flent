@@ -2833,3 +2833,21 @@ class FairnessRunner(ComputingRunner):
         if not valsum:
             return None
         return math.fsum(values)**2 / (len(values) * valsum)
+
+
+class ConverterRunner(ComputingRunner):
+    command = "Unit converter (computed)"
+
+    def __init__(self, multiplier, **kwargs):
+        super(ConverterRunner, self).__init__(**kwargs)
+        self.multiplier = multiplier
+
+    def compute(self, values):
+        if not len(values):
+            return None
+
+        converted_values = [x * self.multiplier if x is not None else None for x in values]
+
+        if not converted_values:
+            return None
+        return math.fsum(converted_values) / len(converted_values)
