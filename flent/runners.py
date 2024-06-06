@@ -1176,9 +1176,9 @@ class NetperfDemoRunner(ProcessRunner):
 
             # The -b flag defines the burst size in packets, and the -w flag defines the interval
             # between bursts in milliseconds.
-            if args['burst_count']:
+            if args['burst_count'] != "":
                 args['burst_count'] = "-b {0}".format(args['burst_count'])
-            if args['burst_interval']:
+            if args['burst_interval'] != "":
                 args['burst_interval'] = "-w {0}".format(args['burst_interval'])
 
             args['host'] = f"-H {args['host']}"
